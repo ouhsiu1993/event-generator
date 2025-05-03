@@ -1,0 +1,26 @@
+# 環境變數
+.env
+.env.local
+.env.*.local
+env-config.js
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+
+# 編輯器目錄和檔案
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 日誌檔案
+logs
+*.log
+npm-debug.log*
+
+# 依賴目錄
+node_modules/

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事件代碼生成器</title>
+    <!-- 順序很重要：先載入環境變數，再載入配置，最後載入主腳本 -->
+<script src="load-env.js"></script>
+<script src="env-config.js"></script>
+<script src="config.js"></script>
+<script src="event-generator.js"></script>
+    <!-- 引入自定義 CSS -->
+    <link rel="stylesheet" href="event-generator.css">
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PPT套件 -->
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.11.0/dist/pptxgen.bundle.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="title mb-0">事件代碼生成器</h1>
+<!-- 按鈕群組 -->
+<div class="flex gap-2">
+    <!-- 下載 PPT 按鈕（靠左） -->
+    <button id="download-ppt-btn" class="btn ppt-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      下載PPT
+    </button>
+  
+    <!-- 儲存至 Google 表單按鈕（靠右） -->
+    <button id="save-to-sheet-btn" class="btn save-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      儲存至Google表單
+    </button>
+  </div>
+  
+            </div>
+            
+            <!-- 代碼名稱 -->
+            <div class="mb-6">
+                <label class="form-label" for="projectName">代碼名稱</label>
+                <input 
+                    type="text" 
+                    id="projectName" 
+                    placeholder="例如：2024母親節活動" 
+                    class="w-full p-3 border rounded-lg"
+                >
+            </div>
+            
+            <!-- 標籤頁導航 -->
+            <div id="tab-container" class="flex items-center border-b border-gray-200 mb-4 overflow-x-auto tab-scroll">
+                <!-- 標籤將在JS中動態生成 -->
+                <button 
+                    id="add-tab-btn" 
+                    class="add-tab-btn"
+                    aria-label="新增標籤頁"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- 標籤頁內容區域 -->
+            <div id="tab-content" class="content-area">
+                <!-- 標籤頁內容將在JS中動態生成 -->
+            </div>
+            
+            <!-- 事件選擇器模態框 -->
+            <div id="event-selector" class="modal-overlay hidden">
+                <div class="modal-card">
+                    <h2 class="modal-title">選擇事件類型</h2>
+                    
+                    <!-- 事件類別選擇 -->
+                    <div class="mb-4">
+                        <label class="form-label">事件類別</label>
+                        <select id="event-category" class="w-full p-2 border rounded">
+                            <option value="general">通用事件</option>
+                            <option value="activity">活動事件</option>
+                            <option value="content">內容事件</option>
+                            <option value="ecommerce">電商事件</option>
+                            <option value="custom">自訂事件</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 標準事件選擇清單 -->
+                    <div id="standard-events-container" class="mb-4">
+                        <label class="form-label">選擇事件</label>
+                        <div id="events-list" class="events-list">
+                            <!-- 事件列表將在JS中動態生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 自訂事件名稱輸入 -->
+                    <div id="custom-event-container" class="mb-4 hidden">
+                        <label class="form-label">自訂事件名稱</label>
+                        <input
+                            type="text"
+                            id="custom-event-name"
+                            placeholder="輸入自訂事件名稱 (英文字母、數字、底線)"
+                            class="w-full p-2 border rounded"
+                        />
+                        <p class="mt-1 text-sm text-gray-500">
+                            事件名稱可包含英文和非英文的字詞及字母、數字和底線構成，不可包含空格。
+                        </p>
+                    </div>
+                    
+                    <!-- 按鈕區域 -->
+                    <div class="flex justify-end mt-6">
+                        <button 
+                            id="cancel-event-btn"
+                            class="btn btn-cancel mr-2"
+                        >
+                            取消
+                        </button>
+                        <button 
+                            id="create-event-btn"
+                            class="btn btn-create"
+                            disabled
+                        >
+                            建立
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 添加儲存模態框 -->
+            <div id="save-to-sheet-modal" class="modal-overlay hidden">
+                <div class="modal-card">
+                    <h2 class="modal-title">確認儲存設定</h2>
+                    
+                    <!-- 添加顯示代碼名稱的區域 -->
+                    <div class="mb-4">
+                        <p class="text-md mb-1 font-medium">代碼名稱：</p>
+                        <p id="display-project-name" class="p-3 bg-gray-100 rounded-md border border-gray-200"></p>
+                    </div>
+                    
+                    <!-- 狀態消息 -->
+                    <div id="save-status" class="mt-2 hidden">
+                        <p class="text-green-600 save-success hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            儲存成功！
+                        </p>
+                        <p class="text-red-600 save-error hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            儲存失敗，請檢查API網址是否正確。
+                        </p>
+                        <p class="text-blue-600 save-loading hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1 animate-spin">
+                                <line x1="12" y1="2" x2="12" y2="6"></line>
+                                <line x1="12" y1="18" x2="12" y2="22"></line>
+                                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                                <line x1="2" y1="12" x2="6" y2="12"></line>
+                                <line x1="18" y1="12" x2="22" y2="12"></line>
+                                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                            </svg>
+                            正在儲存...
+                        </p>
+                    </div>
+                    
+                    <!-- 按鈕區域 -->
+                    <div class="flex justify-end mt-6">
+                        <button 
+                            id="cancel-save-btn"
+                            class="btn btn-cancel mr-2"
+                        >
+                            取消
+                        </button>
+                        <button 
+                            id="confirm-save-btn"
+                            class="btn btn-create"
+                        >
+                            確認儲存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+function doPost(e) {
+  try {
+    const requestData = JSON.parse(e.postData.contents);
+    const action = requestData.action || 'append';
+    const fixedSheetName = "事件清單";
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 主表：事件清單
+    let mainSheet = ss.getSheetByName(fixedSheetName);
+    if (!mainSheet) {
+      mainSheet = ss.insertSheet(fixedSheetName);
+      mainSheet.appendRow(['日期', '專案名稱', '序號', '事件數量', '事件詳細資料']);
+      mainSheet.setFrozenRows(1);
+    }
+
+    if (action === 'append') {
+      const data = requestData.data;
+      const timestamp = new Date(data.date).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+      const projectSheetName = data.projectName || '未命名專案';
+
+      // 將事件 ID 集合變成換行文字
+      const eventSummary = (data.eventConfigs || []).map(cfg => cfg.eventId).join('\n') || '僅基礎追蹤';
+
+      // 寫入主表
+      mainSheet.appendRow([
+        timestamp,
+        data.projectName,
+        data.serialNumber,
+        data.eventConfigs?.length || 0,
+        eventSummary
+      ]);
+      mainSheet.autoResizeColumns(1, 5);
+      mainSheet.setColumnWidth(5, 400);
+      mainSheet.getRange(mainSheet.getLastRow(), 5).setWrap(true);
+
+      // 詳細事件 Sheet：以專案名稱命名
+      let detailSheet = ss.getSheetByName(projectSheetName);
+      if (!detailSheet) {
+      detailSheet = ss.insertSheet(projectSheetName, ss.getSheets().length);
+      detailSheet.appendRow(['日期', '專案名稱', '序號', '事件 ID', '事件類別', '代碼']);
+      detailSheet.setFrozenRows(1);
+      }
+
+      // 每筆事件都寫入代碼（含 script）
+(data.eventConfigs || []).forEach(cfg => {
+  let code = `<script>\n  // 觸發 ${cfg.eventId} 事件\n  Tag('track', '${cfg.eventId}'`;
+
+  try {
+    const params = JSON.parse(cfg.params);
+    if (Object.keys(params).length > 0) {
+      code += `, ${cfg.params}`;
+    }
+  } catch (e) {
+    if (cfg.params && cfg.params !== '{}') {
+      code += `, ${cfg.params}`;
+    }
+  }
+
+  code += ');\n</script>';
+
+  detailSheet.appendRow([
+    timestamp,
+    data.projectName,
+    data.serialNumber,
+    cfg.eventId,
+    cfg.eventCategory,
+    code
+  ]);
+});
+
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        message: `✅ 寫入「${fixedSheetName}」與詳細事件 (${projectSheetName}) 成功`
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: '❌ 不支援的操作: ' + action
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: '❌ 發生錯誤：' + err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
